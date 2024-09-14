@@ -1,0 +1,13 @@
+target/
+
+result
+result-*
+
+/.direnv
+/.envrc.local
+*~
+*.bak
+*.log
+*.orig
+*.sw[a-p]
+*.tmp
