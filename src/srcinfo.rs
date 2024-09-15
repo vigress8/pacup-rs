@@ -1,7 +1,7 @@
 use itertools::Itertools;
-use std::{collections::HashMap, path::Path};
+use std::{collections::HashMap, path::PathBuf};
 
-pub fn parse(source: &str) -> Result<Package<'_>, String> {
+pub fn parse_package(source: &str) -> Result<Package<'_>, String> {
     let attrs = source
         .lines()
         .filter_map(|line| match line.chars().next() {
@@ -9,28 +9,78 @@ pub fn parse(source: &str) -> Result<Package<'_>, String> {
             Some(_) => Some(line),
             None => None,
         })
-        .flat_map(Attr::try_from);
+        .flat_map(Attr::try_from)
+        .collect_vec();
 
-    let mut base = "";
-    let mut version = "";
-    let mut maintainers = vec![];
+    let (mut base, mut version) = ("", "");
+    let (mut maintainers, mut sources) = (vec![], vec![]);
     let mut repology = HashMap::new();
-    let mut sources = vec![];
 
-    let mut srcs = vec![];
-    let mut sums = vec![];
-    for attr in attrs {
-        match attr.typ {
-            AttrType::Pkgbase => base = attr.value,
-            AttrType::Pkgver => version = attr.value,
-            AttrType::Maintainer => maintainers.push(attr.value),
-            AttrType::Repology => {
-                let (key, value) = attr.value.split_once(": ").unwrap();
-                repology.insert(key, value);
+    let (mut srcs, mut sums) = (vec![], vec![]);
+    for (typ, mut chunk) in &attrs.iter().chunk_by(|attr| attr.typ) {
+        match typ {
+            AttrType::Pkgbase => {
+                base = chunk.next().unwrap().value;
+                if let Some(base2) = chunk.next() {
+                    Err(format!(
+                        "Duplicate `pkgbase` attribute: `{base}`, `{}`",
+                        base2.value
+                    ))?
+                }
             }
-            AttrType::Source => srcs.push(attr),
-            AttrType::HashSum(_) => sums.push(attr),
+            AttrType::Pkgver => {
+                version = chunk.next().unwrap().value;
+                if let Some(version2) = chunk.next() {
+                    Err(format!(
+                        "Duplicate `pkgver` attribute: `{version}`, `{}`",
+                        version2.value
+                    ))?
+                }
+            }
+            AttrType::Maintainer => maintainers = chunk.map(|attr| attr.value).collect(),
+            AttrType::Repology => {
+                for attr in chunk {
+                    let (key, value) = attr
+                        .value
+                        .split_once(": ")
+                        .ok_or(format!("Invalid Repology entry: `{}`", attr.value))?;
+                    repology.insert(key, value);
+                }
+            }
+            AttrType::Source => srcs = chunk.collect(),
+            AttrType::HashSum(_) => sums = chunk.collect(),
         }
+    }
+
+    for src in srcs {
+        let mut hashes = vec![];
+
+        let (dest, url) = if let Some((dest, url)) = src.value.split_once("::") {
+            (Some(PathBuf::from(dest)), url)
+        } else {
+            (None, src.value)
+        };
+
+        use HashType::*;
+        for typ in [B2, MD5, SHA1, SHA224, SHA256, SHA384, SHA512] {
+            for (i, sum) in sums.iter().enumerate() {
+                match sum {
+                    Attr {
+                        arch,
+                        distro,
+                        typ: AttrType::HashSum(t),
+                        value,
+                    } if *arch == src.arch && *distro == src.distro && *t == typ => {
+                        hashes.push(HashSum { typ, value });
+                        sums.remove(i);
+                        break;
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        sources.push(SourceEntry { dest, url, hashes });
     }
 
     if base.is_empty() {
@@ -40,7 +90,6 @@ pub fn parse(source: &str) -> Result<Package<'_>, String> {
     if version.is_empty() {
         Err("Required attribute `pkgver` not found".to_owned())?
     }
-
 
     Ok(Package {
         base,
@@ -62,15 +111,15 @@ pub struct Package<'a> {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct SourceEntry<'a> {
-    dest: &'a Path,
-    url: &'a str,
-    hashes: Vec<HashSum<'a>>,
+    pub dest: Option<PathBuf>,
+    pub url: &'a str,
+    pub hashes: Vec<HashSum<'a>>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct HashSum<'a> {
-    typ: HashType,
-    value: &'a str,
+    pub typ: HashType,
+    pub value: &'a str,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
