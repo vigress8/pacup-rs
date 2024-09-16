@@ -12,7 +12,7 @@ fn test_1password_cli_bin() {
             maintainers: vec!["Oren Klopfer <oren@taumoda.com>"],
             repology: HashMap::from([("project", "1password-cli")]),
             sources: vec![SourceEntry {
-                dest: None,
+                dest: "op_linux_amd64_v2.28.0.zip".into(),
                 url:
                     "https://cache.agilebits.com/dist/1P/op2/pkg/v2.28.0/op_linux_amd64_v2.28.0.zip",
                 hashes: vec![HashSum {
@@ -36,7 +36,7 @@ fn test_megasync_deb() {
             repology: HashMap::from([("project", "megasync")]),
             sources: vec![
                 SourceEntry {
-                    dest: None,
+                    dest: "megasync_5.2.1-4.1_amd64.deb".into(),
                     url: "https://mega.nz/linux/repo/xUbuntu_22.04/amd64/megasync_5.2.1-4.1_amd64.deb",
                     hashes: vec![HashSum {
                         typ: HashType::SHA256,
@@ -44,7 +44,7 @@ fn test_megasync_deb() {
                     }]
                 },
                 SourceEntry {
-                    dest: None,
+                    dest: "megasync_5.2.1-2.1_amd64.deb".into(),
                     url: "https://mega.nz/linux/repo/xUbuntu_24.04/amd64/megasync_5.2.1-2.1_amd64.deb",
                     hashes: vec![HashSum {
                         typ: HashType::SHA256,
@@ -52,7 +52,7 @@ fn test_megasync_deb() {
                     }]
                 },
                 SourceEntry {
-                    dest: None,
+                    dest: "megasync_5.2.1-4.1_amd64.deb".into(),
                     url: "https://mega.nz/linux/repo/Debian_11/amd64/megasync_5.2.1-4.1_amd64.deb",
                     hashes: vec![HashSum {
                         typ: HashType::SHA256,
@@ -60,7 +60,7 @@ fn test_megasync_deb() {
                     }]
                 },
                 SourceEntry {
-                    dest: None,
+                    dest: "megasync_5.2.1-4.1_amd64.deb".into(),
                     url: "https://mega.nz/linux/repo/Debian_12/amd64/megasync_5.2.1-4.1_amd64.deb",
                     hashes: vec![HashSum {
                         typ: HashType::SHA256,

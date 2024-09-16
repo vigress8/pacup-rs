@@ -48,7 +48,7 @@ pub fn parse_package(source: &str) -> Result<Package<'_>, String> {
                 }
             }
             AttrType::Source => srcs = chunk.collect(),
-            AttrType::HashSum(_) => sums = chunk.collect(),
+            AttrType::HashSum(_) => sums = chunk.filter(|sum| sum.value != "SKIP").collect(),
         }
     }
 
@@ -56,9 +56,9 @@ pub fn parse_package(source: &str) -> Result<Package<'_>, String> {
         let mut hashes = vec![];
 
         let (dest, url) = if let Some((dest, url)) = src.value.split_once("::") {
-            (Some(PathBuf::from(dest)), url)
+            (dest.into(), url)
         } else {
-            (None, src.value)
+            (src.value.rsplit('/').next().unwrap().into(), src.value)
         };
 
         use HashType::*;
@@ -111,7 +111,7 @@ pub struct Package<'a> {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct SourceEntry<'a> {
-    pub dest: Option<PathBuf>,
+    pub dest: PathBuf,
     pub url: &'a str,
     pub hashes: Vec<HashSum<'a>>,
 }

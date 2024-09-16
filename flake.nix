@@ -55,7 +55,7 @@
           default = craneLib.buildPackage {
             src = craneLib.cleanCargoSource ./.;
             strictDeps = true;
-            buildInputs = [ ];
+            buildInputs = [ pkgs.openssl ];
           };
         }
       );
