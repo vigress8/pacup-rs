@@ -23,7 +23,6 @@ impl SourceEntry<'_> {
     pub async fn download(&self, client: &Client) -> anyhow::Result<()> {
         let mut res = client.get(self.url).send().await?.error_for_status()?;
         let content_len = res.content_length().unwrap_or(0);
-        let mut handle = File::options().create(true).append(true).open(&self.dest)?;
 
         let bar = ProgressBar::new(content_len).with_style(
             ProgressStyle::with_template(
@@ -35,9 +34,9 @@ impl SourceEntry<'_> {
             .progress_chars("#>-"),
         );
 
-        let expected_hash = self.hashes.first().map(|sum| sum.value);
-        let mut maybe_hasher = self.hashes.first().map(|sum| to_hasher(sum.typ));
-
+        let expected_hash = self.hashes.first().map(|hash| hash.value);
+        let mut maybe_hasher = self.hashes.first().map(|hash| to_hasher(hash.typ));
+        let mut handle = File::options().create(true).append(true).open(&self.dest)?;
         while let Some(chunk) = res.chunk().await? {
             bar.inc(chunk.len() as u64);
             if let Some(hasher) = maybe_hasher.as_mut() {
@@ -47,18 +46,37 @@ impl SourceEntry<'_> {
         }
 
         bar.finish();
-        let final_hash = maybe_hasher.map_or(String::new(), |hasher| {
-            String::from_utf8(hasher.finalize().into_vec()).unwrap()
-        });
+        let final_hash =
+            maybe_hasher.map_or(String::new(), |hasher| hex::encode(hasher.finalize()));
 
         if expected_hash.map_or(true, |hash| hash == final_hash) {
             Ok(())
         } else {
             bail!(
-                "Hash match: expected `{}`, got `{}`",
+                "Hash mismatch: expected `{}`, got `{}`",
                 expected_hash.unwrap(),
                 final_hash
             )
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::srcinfo::*;
+    use reqwest::Client;
+
+    #[tokio::test]
+    async fn test_download() {
+        let client = Client::new();
+        let entry = SourceEntry {
+            url: "https://example.com",
+            dest: "foo.txt".into(),
+            hashes: vec![HashSum {
+                typ: HashType::SHA256,
+                value: "ea8fac7c65fb589b0d53560f5251f74f9e9b243478dcb6b3ea79b5e36449c8d9",
+            }],
+        };
+        entry.download(&client).await.unwrap();
     }
 }
