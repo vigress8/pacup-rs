@@ -12,10 +12,10 @@ fn to_hasher(typ: HashType) -> Box<dyn DynDigest> {
         B2 => Box::new(blake2::Blake2s256::new()),
         MD5 => Box::new(md5::Md5::new()),
         SHA1 => Box::new(sha1::Sha1::new()),
-        SHA224 => Box::new(sha3::Sha3_224::new()),
-        SHA256 => Box::new(sha3::Sha3_256::new()),
-        SHA384 => Box::new(sha3::Sha3_384::new()),
-        SHA512 => Box::new(sha3::Sha3_512::new()),
+        SHA224 => Box::new(sha2::Sha224::new()),
+        SHA256 => Box::new(sha2::Sha256::new()),
+        SHA384 => Box::new(sha2::Sha384::new()),
+        SHA512 => Box::new(sha2::Sha512::new()),
     }
 }
 
@@ -36,10 +36,11 @@ impl SourceEntry<'_> {
 
         let expected_hash = self.hashes.first().map(|hash| hash.value);
         let mut maybe_hasher = self.hashes.first().map(|hash| to_hasher(hash.typ));
-        let mut handle = File::options().create(true).append(true).open(&self.dest)?;
+        let mut handle = File::options().create(true).write(true).open(&self.dest)?;
+
         while let Some(chunk) = res.chunk().await? {
             bar.inc(chunk.len() as u64);
-            if let Some(hasher) = maybe_hasher.as_mut() {
+            if let Some(ref mut hasher) = maybe_hasher.as_mut() {
                 hasher.update(&chunk);
             }
             handle.write_all(&chunk)?;
@@ -71,7 +72,7 @@ mod tests {
         let client = Client::new();
         let entry = SourceEntry {
             url: "https://example.com",
-            dest: "foo.txt".into(),
+            dest: "example.tmp".into(),
             hashes: vec![HashSum {
                 typ: HashType::SHA256,
                 value: "ea8fac7c65fb589b0d53560f5251f74f9e9b243478dcb6b3ea79b5e36449c8d9",

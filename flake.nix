@@ -74,6 +74,7 @@
             CARGO_INCREMENTAL = "0";
             RUSTC_WRAPPER = "sccache";
             RUSTFLAGS = "-C link-arg=-fuse-ld=mold";
+            LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [ pkgs.openssl ];
           };
         }
       );

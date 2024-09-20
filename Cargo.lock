@@ -635,15 +635,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "keccak"
-version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ecc2af9a1119c51f12a14607e783cb977bde58bc069ff0c3da1095e635d70654"
-dependencies = [
- "cpufeatures",
-]
-
-[[package]]
 name = "lazy_static"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -799,14 +790,13 @@ dependencies = [
  "anyhow",
  "blake2",
  "clap",
- "digest",
  "hex",
  "indicatif",
  "itertools",
  "md-5",
  "reqwest",
  "sha1",
- "sha3",
+ "sha2",
  "tokio",
 ]
 
@@ -1089,13 +1079,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "sha3"
+name = "sha2"
 version = "0.10.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "75872d278a8f37ef87fa0ddbda7802605cb18344497949862c0d4dcb291eba60"
+checksum = "793db75ad2bcafc3ffa7c68b215fee268f537982cd901d132f89c6343f3a3dc8"
 dependencies = [
+ "cfg-if",
+ "cpufeatures",
  "digest",
- "keccak",
 ]
 
 [[package]]
